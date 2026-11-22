@@ -1,7 +1,7 @@
 {
   "name": "@josediazgonzalez/homebridge-litterrobot4",
   "displayName": "Litter-Robot 4",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Homebridge plugin and standalone SDK for Whisker Litter-Robot 4 units, through the Whisker cloud or locally with ESPHome firmware",
   "license": "Apache-2.0",
   "author": "Jose Diaz-Gonzalez",
