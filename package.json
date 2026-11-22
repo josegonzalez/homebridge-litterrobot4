@@ -1,0 +1,68 @@
+{
+  "name": "@josediazgonzalez/homebridge-litterrobot4",
+  "displayName": "Litter-Robot 4",
+  "version": "0.1.0",
+  "description": "Homebridge plugin and standalone SDK for Whisker Litter-Robot 4 units, through the Whisker cloud or locally with ESPHome firmware",
+  "license": "Apache-2.0",
+  "author": "Jose Diaz-Gonzalez",
+  "homepage": "https://github.com/josegonzalez/homebridge-litterrobot4#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/josegonzalez/homebridge-litterrobot4.git"
+  },
+  "bugs": {
+    "url": "https://github.com/josegonzalez/homebridge-litterrobot4/issues"
+  },
+  "keywords": [
+    "homebridge-plugin",
+    "homekit",
+    "litter-robot",
+    "litterrobot",
+    "litter-robot-4",
+    "whisker",
+    "esphome"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./sdk": {
+      "types": "./dist/sdk/index.d.ts",
+      "default": "./dist/sdk/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.test.*",
+    "!dist/test",
+    "config.schema.json",
+    "LICENSE",
+    "NOTICE",
+    "README.md"
+  ],
+  "engines": {
+    "homebridge": "^1.8.0 || ^2.0.0",
+    "node": "^22.12.0 || ^24 || ^26"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "npm run build && node --test \"dist/**/*.test.js\"",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepare": "node scripts/build.mjs",
+    "prepublishOnly": "npm test"
+  },
+  "devDependencies": {
+    "@homebridge/hap-nodejs": "^2.3.0",
+    "@types/node": "^26.6.6",
+    "homebridge": "^2.5.0",
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "@homebridge/plugin-ui-utils": "^2.3.0"
+  }
+}

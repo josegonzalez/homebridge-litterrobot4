@@ -1,0 +1,10 @@
+Copyright 2026 Jose Diaz-Gonzalez
+
+This product talks to the Whisker cloud API as described by pylitterbot
+(https://github.com/natekspencer/pylitterbot), which is licensed under the MIT
+License, and to robots running the ESPHome firmware from
+https://codeberg.org/Joseph-DiGiovanni/esphome-litter-robot. No code from
+either project is included.
+
+Whisker and Litter-Robot are trademarks of their respective owners. This
+project is not affiliated with or endorsed by Whisker.

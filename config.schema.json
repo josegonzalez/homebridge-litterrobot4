@@ -1,0 +1,191 @@
+{
+  "pluginAlias": "LitterRobot4",
+  "pluginType": "platform",
+  "singular": true,
+  "customUi": true,
+  "customUiPath": "./dist/homebridge-ui",
+  "strictValidation": true,
+  "headerDisplay": "Control Whisker Litter-Robot 4 units. Robots with stock firmware are controlled through the Whisker cloud with the account you use in the Whisker app; every robot on the account is added automatically. Robots flashed with ESPHome firmware are controlled over your local network.",
+  "footerDisplay": "The Whisker cloud API is not published and may change without notice. This plugin is not affiliated with Whisker.",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "title": "Platform Name",
+        "type": "string",
+        "default": "Litter-Robot 4"
+      },
+      "email": {
+        "title": "Whisker Email",
+        "type": "string",
+        "format": "email",
+        "description": "The email you sign in to the Whisker app with."
+      },
+      "password": {
+        "title": "Whisker Password",
+        "type": "string",
+        "x-schema-form": { "type": "password" },
+        "description": "Stored in the Homebridge config. The plugin also caches its session in the Homebridge storage folder."
+      },
+      "robots": {
+        "title": "Cloud Robots",
+        "description": "Optional. Every robot on the account is added with the defaults; add an entry to rename, hide or change the services of one.",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "serial": {
+              "title": "Serial",
+              "type": "string",
+              "required": true,
+              "placeholder": "LR4C000000",
+              "description": "As shown by \"Check account\" above, or in the Whisker app."
+            },
+            "name": {
+              "title": "Name",
+              "type": "string",
+              "description": "Defaults to the name in the Whisker app."
+            },
+            "hidden": {
+              "title": "Hide from HomeKit",
+              "type": "boolean",
+              "default": false
+            },
+            "cleanSwitch": { "title": "Clean cycle switch", "type": "boolean", "default": true },
+            "wasteDrawer": { "title": "Waste drawer level", "type": "boolean", "default": true },
+            "litterLevel": { "title": "Litter level", "type": "boolean", "default": true },
+            "catSensor": { "title": "Cat detected sensor", "type": "boolean", "default": true },
+            "nightLight": { "title": "Night light", "type": "boolean", "default": true },
+            "panelLockSwitch": { "title": "Panel lock switch", "type": "boolean", "default": true },
+            "powerSwitch": { "title": "Power switch", "type": "boolean", "default": true }
+          }
+        }
+      },
+      "esphome": {
+        "title": "ESPHome Robots",
+        "description": "Robots flashed with the open source ESPHome firmware.",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "title": "Name",
+              "type": "string",
+              "required": true,
+              "placeholder": "Basement Litter-Robot"
+            },
+            "mac": {
+              "title": "MAC Address",
+              "type": "string",
+              "pattern": "^([0-9a-fA-F]{2}[:-]?){5}[0-9a-fA-F]{2}$",
+              "description": "Recommended. Used to find the robot with mDNS and to follow it when its IP address changes."
+            },
+            "host": {
+              "title": "Host",
+              "type": "string",
+              "description": "IP address or hostname, optionally with a port. Optional when the MAC address is set."
+            },
+            "username": {
+              "title": "Web Server Username",
+              "type": "string",
+              "default": "user"
+            },
+            "password": {
+              "title": "Web Server Password",
+              "type": "string",
+              "x-schema-form": { "type": "password" },
+              "description": "From the firmware config (web_server: auth:). Leave empty if auth is turned off."
+            },
+            "cleanSwitch": { "title": "Clean cycle switch", "type": "boolean", "default": true },
+            "wasteDrawer": { "title": "Waste drawer level", "type": "boolean", "default": true },
+            "litterLevel": { "title": "Litter level", "type": "boolean", "default": true },
+            "catSensor": { "title": "Cat detected sensor", "type": "boolean", "default": true },
+            "nightLight": { "title": "Night light", "type": "boolean", "default": true },
+            "panelLockSwitch": { "title": "Panel lock switch", "type": "boolean", "default": true },
+            "powerSwitch": { "title": "Power switch", "type": "boolean", "default": true }
+          }
+        }
+      },
+      "pollInterval": {
+        "title": "Poll Interval (seconds)",
+        "type": "integer",
+        "default": 30,
+        "minimum": 10,
+        "description": "How often to read each robot's state. HomeKit reads are answered from this cached state."
+      },
+      "discovery": {
+        "title": "Discovery",
+        "type": "boolean",
+        "default": true,
+        "description": "Find ESPHome robots with mDNS and follow IP address changes."
+      }
+    }
+  },
+  "layout": [
+    "email",
+    "password",
+    {
+      "key": "robots",
+      "type": "array",
+      "listItems": 0,
+      "orderable": false,
+      "buttonText": "Customize a Robot",
+      "items": [
+        "robots[].serial",
+        "robots[].name",
+        "robots[].hidden",
+        {
+          "type": "fieldset",
+          "title": "HomeKit Services",
+          "expandable": true,
+          "expanded": false,
+          "items": [
+            "robots[].cleanSwitch",
+            "robots[].wasteDrawer",
+            "robots[].litterLevel",
+            "robots[].catSensor",
+            "robots[].nightLight",
+            "robots[].panelLockSwitch",
+            "robots[].powerSwitch"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "esphome",
+      "type": "array",
+      "listItems": 0,
+      "orderable": false,
+      "buttonText": "Add ESPHome Robot",
+      "items": [
+        "esphome[].name",
+        "esphome[].mac",
+        "esphome[].host",
+        "esphome[].username",
+        "esphome[].password",
+        {
+          "type": "fieldset",
+          "title": "HomeKit Services",
+          "expandable": true,
+          "expanded": false,
+          "items": [
+            "esphome[].cleanSwitch",
+            "esphome[].wasteDrawer",
+            "esphome[].litterLevel",
+            "esphome[].catSensor",
+            "esphome[].nightLight",
+            "esphome[].panelLockSwitch",
+            "esphome[].powerSwitch"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "fieldset",
+      "title": "Advanced",
+      "expandable": true,
+      "expanded": false,
+      "items": ["name", "pollInterval", "discovery"]
+    }
+  ]
+}

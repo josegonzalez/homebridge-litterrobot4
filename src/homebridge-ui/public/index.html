@@ -1,0 +1,291 @@
+<!--
+  Custom settings page for the Litter-Robot 4 plugin. The Homebridge UI
+  provides the `homebridge` global and Bootstrap styles. Everything that comes
+  from the network is inserted with textContent, never as HTML.
+-->
+<style>
+  .lr-card { border: 1px solid var(--bs-border-color, #dee2e6); border-radius: 0.5rem; padding: 0.75rem 1rem; margin-bottom: 0.75rem; }
+  .lr-card header { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+  .lr-meta { font-size: 0.85rem; opacity: 0.8; word-break: break-all; }
+  .lr-form { margin-top: 0.75rem; }
+  .lr-help { font-size: 0.85rem; }
+</style>
+
+<div id="lr-app">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h5 class="mb-0">Whisker account</h5>
+    <button type="button" class="btn btn-primary btn-sm" id="lr-account">Check account</button>
+  </div>
+  <p class="lr-meta" id="lr-account-status">
+    Robots with stock firmware are controlled through the Whisker cloud. Enter the email and password you use in the Whisker app
+    below, then check the account. Every robot on the account is added to HomeKit unless you hide it.
+  </p>
+  <div id="lr-cloud"></div>
+
+  <div class="d-flex justify-content-between align-items-center mb-2 mt-4">
+    <h5 class="mb-0">ESPHome robots</h5>
+    <button type="button" class="btn btn-outline-primary btn-sm" id="lr-scan">Search the network</button>
+  </div>
+  <p class="lr-meta" id="lr-scan-status">
+    Only for robots flashed with the open source ESPHome firmware. Stock robots do not show up on the network.
+  </p>
+  <div id="lr-esphome"></div>
+
+  <h5 class="mt-4">Settings</h5>
+</div>
+
+<script>
+  (async () => {
+    const PLATFORM = 'LitterRobot4';
+    const $ = (id) => document.getElementById(id);
+    const el = (tag, attrs = {}, ...children) => {
+      const node = document.createElement(tag);
+      for (const [k, v] of Object.entries(attrs)) {
+        if (k === 'class') node.className = v;
+        else node.setAttribute(k, v);
+      }
+      for (const c of children) node.append(c instanceof Node ? c : document.createTextNode(String(c)));
+      return node;
+    };
+    const normalizeMac = (mac) => String(mac || '').replace(/[^0-9a-fA-F]/g, '').toUpperCase();
+    const filled = (v) => typeof v === 'string' && v.trim() !== '';
+    // Entries with none of these set are empty rows, such as the one the
+    // settings form adds to an empty list. They only hold the form's defaults.
+    const isBlankCloud = (r) => !r || ![r.serial, r.name].some(filled);
+    const isBlankESPHome = (r) => !r || ![r.name, r.host, r.mac, r.password].some(filled);
+
+    let accountRobots = [];
+    let discovered = [];
+
+    async function loadConfig() {
+      const blocks = await homebridge.getPluginConfig();
+      if (blocks.length === 0) blocks.push({ platform: PLATFORM, name: 'Litter-Robot 4' });
+      const b = blocks[0];
+      b.robots = (b.robots || []).filter((r) => !isBlankCloud(r));
+      b.esphome = (b.esphome || []).filter((r) => !isBlankESPHome(r));
+      return blocks;
+    }
+
+    // Drops empty rows from the saved configuration. The change is saved with
+    // the next "Save", or right away when a robot is set up.
+    async function dropBlankEntries() {
+      const blocks = await homebridge.getPluginConfig();
+      const b = blocks[0];
+      if (b && ((b.robots || []).some(isBlankCloud) || (b.esphome || []).some(isBlankESPHome))) {
+        await homebridge.updatePluginConfig(await loadConfig());
+      }
+    }
+
+    function card({ title, subtitle, badge, badgeClass, actions = [], body }) {
+      return el(
+        'div',
+        { class: 'lr-card' },
+        el('header', {}, el('div', {}, el('strong', {}, title), ' ', el('span', { class: `badge ${badgeClass}` }, badge)), el('div', {}, ...actions)),
+        el('div', { class: 'lr-meta' }, subtitle),
+        body || '',
+      );
+    }
+
+    const errorText = (err) => (err && err.message) || String(err);
+
+    // Whisker account -------------------------------------------------------
+
+    async function setHidden(robot, hidden) {
+      const blocks = await loadConfig();
+      const robots = blocks[0].robots;
+      const i = robots.findIndex((r) => String(r.serial).toUpperCase() === robot.serial.toUpperCase());
+      if (i === -1) robots.push({ serial: robot.serial, name: robot.name, hidden });
+      else robots[i] = { ...robots[i], hidden };
+      await homebridge.updatePluginConfig(blocks);
+      await homebridge.savePluginConfig();
+      homebridge.toast.success(`${robot.name || robot.serial} ${hidden ? 'hidden' : 'shown'}. Restart Homebridge (or the child bridge) to apply.`, 'Litter-Robot 4');
+      await renderCloud();
+    }
+
+    async function renderCloud() {
+      const blocks = await loadConfig();
+      const configured = blocks[0].robots;
+      const list = $('lr-cloud');
+      list.replaceChildren();
+      for (const robot of accountRobots) {
+        const entry = configured.find((r) => String(r.serial).toUpperCase() === robot.serial.toUpperCase());
+        const hidden = Boolean(entry && entry.hidden);
+        const button = el('button', { type: 'button', class: 'btn btn-outline-secondary btn-sm' }, hidden ? 'Show in HomeKit' : 'Hide from HomeKit');
+        button.addEventListener('click', () => setHidden(robot, !hidden));
+        list.append(
+          card({
+            title: (entry && entry.name) || robot.name || robot.serial,
+            subtitle: [`Serial ${robot.serial}`, robot.status, robot.online ? 'online' : 'offline'].join(' · '),
+            badge: hidden ? 'Hidden' : 'In HomeKit',
+            badgeClass: hidden ? 'bg-secondary' : 'bg-success',
+            actions: [button],
+          }),
+        );
+      }
+      for (const entry of configured) {
+        if (accountRobots.length && !accountRobots.some((r) => r.serial.toUpperCase() === String(entry.serial).toUpperCase())) {
+          list.append(
+            card({ title: entry.name || entry.serial, subtitle: `Serial ${entry.serial}`, badge: 'Not on this account', badgeClass: 'bg-warning text-dark' }),
+          );
+        }
+      }
+      homebridge.fixScrollHeight();
+    }
+
+    $('lr-account').addEventListener('click', async () => {
+      const button = $('lr-account');
+      button.disabled = true;
+      $('lr-account-status').textContent = 'Signing in...';
+      try {
+        const [block] = await loadConfig();
+        accountRobots = await homebridge.request('/account', { email: block.email, password: block.password });
+        $('lr-account-status').textContent = accountRobots.length
+          ? `Signed in. Found ${accountRobots.length} Litter-Robot 4 unit(s).`
+          : 'Signed in, but there are no Litter-Robot 4 units on this account.';
+        await renderCloud();
+      } catch (err) {
+        $('lr-account-status').textContent = errorText(err);
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    // ESPHome robots --------------------------------------------------------
+
+    async function saveESPHome(robot) {
+      const blocks = await loadConfig();
+      const robots = blocks[0].esphome;
+      const mac = normalizeMac(robot.mac);
+      const i = robots.findIndex((r) => (mac && normalizeMac(r.mac) === mac) || (!r.mac && r.host === robot.host));
+      if (i === -1) robots.push(robot);
+      else robots[i] = { ...robots[i], ...robot };
+      await homebridge.updatePluginConfig(blocks);
+      await homebridge.savePluginConfig();
+      homebridge.toast.success(`${robot.name} saved. Restart Homebridge (or the child bridge) to apply.`, 'Litter-Robot 4');
+    }
+
+    function setupForm({ name, host, mac, username, existing }) {
+      const form = el('form', { class: 'lr-form' });
+      const nameInput = el('input', { class: 'form-control form-control-sm', required: '', value: name || '' });
+      const userInput = el('input', { class: 'form-control form-control-sm', value: username || 'user', autocomplete: 'off' });
+      const passInput = el('input', { class: 'form-control form-control-sm', type: 'password', autocomplete: 'off' });
+      const feedback = el('div');
+      const submit = el('button', { type: 'submit', class: 'btn btn-primary btn-sm' }, existing ? 'Check and update' : 'Check and add');
+      form.append(
+        el('p', { class: 'lr-help mb-2' }, 'The web server password is set in the firmware config (web_server: auth:). Leave it empty if auth is off.'),
+        el('div', { class: 'mb-2' }, el('label', { class: 'form-label mb-1' }, 'Name'), nameInput),
+        el('div', { class: 'mb-2' }, el('label', { class: 'form-label mb-1' }, 'Username'), userInput),
+        el('div', { class: 'mb-2' }, el('label', { class: 'form-label mb-1' }, 'Password'), passInput),
+        submit,
+        feedback,
+      );
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        feedback.replaceChildren();
+        submit.disabled = true;
+        homebridge.showSpinner();
+        try {
+          const username = userInput.value.trim();
+          const password = passInput.value;
+          await homebridge.request('/verify', { host, username, password });
+          await saveESPHome({ name: nameInput.value.trim(), host, mac: normalizeMac(mac) || undefined, username, password });
+          await renderESPHome();
+        } catch (err) {
+          feedback.append(el('div', { class: 'alert alert-danger mt-2 mb-0' }, errorText(err)));
+        } finally {
+          submit.disabled = false;
+          homebridge.hideSpinner();
+        }
+      });
+      return form;
+    }
+
+    async function renderESPHome() {
+      const blocks = await loadConfig();
+      const configured = blocks[0].esphome;
+      const list = $('lr-esphome');
+      list.replaceChildren();
+      const matched = new Set();
+      for (const robot of configured) {
+        const mac = normalizeMac(robot.mac);
+        const found = discovered.find((d) => (mac && d.mac === mac) || d.address === robot.host);
+        if (found) matched.add(found.mac || found.address);
+        const host = (found && found.address) || robot.host || '';
+        const slot = el('div');
+        const check = el('button', { type: 'button', class: 'btn btn-outline-secondary btn-sm' }, 'Check');
+        check.addEventListener('click', async () => {
+          slot.replaceChildren();
+          homebridge.showSpinner();
+          try {
+            const result = await homebridge.request('/verify', { host, username: robot.username, password: robot.password });
+            homebridge.toast.success(`${robot.name} answers: ${result.status}.`);
+            if (found && robot.host !== found.address) {
+              await saveESPHome({ ...robot, host: found.address });
+              await renderESPHome();
+            }
+          } catch (err) {
+            slot.append(el('div', { class: 'alert alert-danger mt-2 mb-0' }, errorText(err)));
+            if (err && err.error && err.error.code === 'rejected') {
+              slot.append(setupForm({ name: robot.name, host, mac: robot.mac, username: robot.username, existing: true }));
+            }
+          } finally {
+            homebridge.hideSpinner();
+          }
+        });
+        const status = found ? ['On the network', 'bg-success'] : discovered.length ? ['Not found', 'bg-secondary'] : ['Saved', 'bg-secondary'];
+        list.append(
+          card({
+            title: robot.name || '(unnamed)',
+            subtitle: [host, mac && `MAC ${mac}`].filter(Boolean).join(' · '),
+            badge: status[0],
+            badgeClass: status[1],
+            actions: host ? [check] : [],
+            body: slot,
+          }),
+        );
+      }
+      for (const d of discovered) {
+        if (matched.has(d.mac || d.address)) continue;
+        const slot = el('div');
+        const add = el('button', { type: 'button', class: 'btn btn-success btn-sm' }, 'Set up');
+        add.addEventListener('click', () => {
+          slot.replaceChildren(setupForm({ name: '', host: d.address, mac: d.mac }));
+          add.remove();
+        });
+        list.append(
+          card({
+            title: d.name,
+            subtitle: [d.address, d.mac && `MAC ${d.mac}`].filter(Boolean).join(' · '),
+            badge: 'Not set up',
+            badgeClass: 'bg-warning text-dark',
+            actions: [add],
+            body: slot,
+          }),
+        );
+      }
+      homebridge.fixScrollHeight();
+    }
+
+    $('lr-scan').addEventListener('click', async () => {
+      const button = $('lr-scan');
+      button.disabled = true;
+      $('lr-scan-status').textContent = 'Searching...';
+      try {
+        discovered = await homebridge.request('/discover');
+        $('lr-scan-status').textContent = discovered.length
+          ? `Found ${discovered.length} ESPHome robot(s).`
+          : 'No ESPHome robots found. Stock robots do not show up here; use the Whisker account above.';
+        await renderESPHome();
+      } catch (err) {
+        $('lr-scan-status').textContent = `Search failed: ${errorText(err)}`;
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    await dropBlankEntries();
+    await renderCloud();
+    await renderESPHome();
+    homebridge.showSchemaForm();
+  })();
+</script>
