@@ -309,6 +309,11 @@
     });
 
     try {
+      // The Homebridge UI only renders the settings form once the plugin has a
+      // config block, so create one on a fresh install.
+      if ((await homebridge.getPluginConfig()).length === 0) {
+        await homebridge.updatePluginConfig(await loadConfig());
+      }
       const [block] = await loadConfig();
       $('lr-email').value = block.email || '';
       $('lr-password').value = block.password || '';

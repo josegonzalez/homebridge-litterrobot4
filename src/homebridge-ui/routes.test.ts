@@ -31,7 +31,9 @@ describe('settings UI routes', () => {
 
   it('explains missing and wrong credentials', async () => {
     await assert.rejects(accountRobots({ email: TEST_EMAIL }, endpoints()), code('missing'));
-    await assert.rejects(accountRobots({ email: TEST_EMAIL, password: 'nope' }, endpoints()), code('auth'));
+    await assert.rejects(accountRobots({ email: TEST_EMAIL, password: 'nope' }, endpoints()), (err: unknown) => {
+      return code('auth')(err) && (err as Error).message.startsWith('Incorrect email or password');
+    });
   });
 
   it('checks ESPHome credentials', async () => {
