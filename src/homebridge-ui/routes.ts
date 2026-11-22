@@ -52,7 +52,11 @@ export async function accountRobots(body: AccountRequest, options: RouteOptions 
     });
   } catch (err) {
     if (err instanceof AuthError) {
-      throw new RequestError(err.message, { code: 'auth' });
+      // Whisker reports unknown users through a user migration hook, with an unreadable message.
+      const wrong = ['NotAuthorizedException', 'UserNotFoundException'].includes(err.type);
+      throw new RequestError(wrong ? 'Incorrect email or password. Use the same ones as in the Whisker app.' : err.message, {
+        code: 'auth',
+      });
     }
     throw new RequestError(err instanceof Error ? err.message : String(err), { code: 'error' });
   }

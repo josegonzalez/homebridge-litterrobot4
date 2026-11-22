@@ -24,7 +24,9 @@
       "password": {
         "title": "Whisker Password",
         "type": "string",
-        "x-schema-form": { "type": "password" },
+        "x-schema-form": {
+          "type": "password"
+        },
         "description": "Stored in the Homebridge config. The plugin also caches its session in the Homebridge storage folder."
       },
       "robots": {
@@ -37,9 +39,8 @@
             "serial": {
               "title": "Serial",
               "type": "string",
-              "required": true,
               "placeholder": "LR4C000000",
-              "description": "As shown after \"Sign in and check\" above, or in the Whisker app."
+              "description": "Required. As shown after \"Sign in and check\" above, or in the Whisker app."
             },
             "name": {
               "title": "Name",
@@ -51,13 +52,41 @@
               "type": "boolean",
               "default": false
             },
-            "cleanSwitch": { "title": "Clean cycle switch", "type": "boolean", "default": true },
-            "wasteDrawer": { "title": "Waste drawer level", "type": "boolean", "default": true },
-            "litterLevel": { "title": "Litter level", "type": "boolean", "default": true },
-            "catSensor": { "title": "Cat detected sensor", "type": "boolean", "default": true },
-            "nightLight": { "title": "Night light", "type": "boolean", "default": true },
-            "panelLockSwitch": { "title": "Panel lock switch", "type": "boolean", "default": true },
-            "powerSwitch": { "title": "Power switch", "type": "boolean", "default": true }
+            "cleanSwitch": {
+              "title": "Clean cycle switch",
+              "type": "boolean",
+              "default": true
+            },
+            "wasteDrawer": {
+              "title": "Waste drawer level",
+              "type": "boolean",
+              "default": true
+            },
+            "litterLevel": {
+              "title": "Litter level",
+              "type": "boolean",
+              "default": true
+            },
+            "catSensor": {
+              "title": "Cat detected sensor",
+              "type": "boolean",
+              "default": true
+            },
+            "nightLight": {
+              "title": "Night light",
+              "type": "boolean",
+              "default": true
+            },
+            "panelLockSwitch": {
+              "title": "Panel lock switch",
+              "type": "boolean",
+              "default": true
+            },
+            "powerSwitch": {
+              "title": "Power switch",
+              "type": "boolean",
+              "default": true
+            }
           }
         }
       },
@@ -71,8 +100,8 @@
             "name": {
               "title": "Name",
               "type": "string",
-              "required": true,
-              "placeholder": "Basement Litter-Robot"
+              "placeholder": "Basement Litter-Robot",
+              "description": "Required. Name shown in HomeKit."
             },
             "mac": {
               "title": "MAC Address",
@@ -93,16 +122,46 @@
             "password": {
               "title": "Web Server Password",
               "type": "string",
-              "x-schema-form": { "type": "password" },
+              "x-schema-form": {
+                "type": "password"
+              },
               "description": "From the firmware config (web_server: auth:). Leave empty if auth is turned off."
             },
-            "cleanSwitch": { "title": "Clean cycle switch", "type": "boolean", "default": true },
-            "wasteDrawer": { "title": "Waste drawer level", "type": "boolean", "default": true },
-            "litterLevel": { "title": "Litter level", "type": "boolean", "default": true },
-            "catSensor": { "title": "Cat detected sensor", "type": "boolean", "default": true },
-            "nightLight": { "title": "Night light", "type": "boolean", "default": true },
-            "panelLockSwitch": { "title": "Panel lock switch", "type": "boolean", "default": true },
-            "powerSwitch": { "title": "Power switch", "type": "boolean", "default": true }
+            "cleanSwitch": {
+              "title": "Clean cycle switch",
+              "type": "boolean",
+              "default": true
+            },
+            "wasteDrawer": {
+              "title": "Waste drawer level",
+              "type": "boolean",
+              "default": true
+            },
+            "litterLevel": {
+              "title": "Litter level",
+              "type": "boolean",
+              "default": true
+            },
+            "catSensor": {
+              "title": "Cat detected sensor",
+              "type": "boolean",
+              "default": true
+            },
+            "nightLight": {
+              "title": "Night light",
+              "type": "boolean",
+              "default": true
+            },
+            "panelLockSwitch": {
+              "title": "Panel lock switch",
+              "type": "boolean",
+              "default": true
+            },
+            "powerSwitch": {
+              "title": "Power switch",
+              "type": "boolean",
+              "default": true
+            }
           }
         }
       },
@@ -123,21 +182,21 @@
   },
   "layout": [
     {
-      "key": "robots",
-      "type": "array",
-      "listItems": 0,
-      "orderable": false,
-      "buttonText": "Customize a Robot",
+      "type": "fieldset",
+      "title": "Customize cloud robots",
+      "expandable": true,
+      "expanded": false,
       "items": [
-        "robots[].serial",
-        "robots[].name",
-        "robots[].hidden",
         {
-          "type": "fieldset",
-          "title": "HomeKit Services",
-          "expandable": true,
-          "expanded": false,
+          "key": "robots",
+          "type": "array",
+          "listItems": 0,
+          "orderable": false,
+          "buttonText": "Customize a Robot",
           "items": [
+            "robots[].serial",
+            "robots[].name",
+            "robots[].hidden",
             "robots[].cleanSwitch",
             "robots[].wasteDrawer",
             "robots[].litterLevel",
@@ -150,23 +209,23 @@
       ]
     },
     {
-      "key": "esphome",
-      "type": "array",
-      "listItems": 0,
-      "orderable": false,
-      "buttonText": "Add ESPHome Robot",
+      "type": "fieldset",
+      "title": "ESPHome robots (manual setup)",
+      "expandable": true,
+      "expanded": false,
       "items": [
-        "esphome[].name",
-        "esphome[].mac",
-        "esphome[].host",
-        "esphome[].username",
-        "esphome[].password",
         {
-          "type": "fieldset",
-          "title": "HomeKit Services",
-          "expandable": true,
-          "expanded": false,
+          "key": "esphome",
+          "type": "array",
+          "listItems": 0,
+          "orderable": false,
+          "buttonText": "Add ESPHome Robot",
           "items": [
+            "esphome[].name",
+            "esphome[].mac",
+            "esphome[].host",
+            "esphome[].username",
+            "esphome[].password",
             "esphome[].cleanSwitch",
             "esphome[].wasteDrawer",
             "esphome[].litterLevel",
@@ -183,7 +242,11 @@
       "title": "Advanced",
       "expandable": true,
       "expanded": false,
-      "items": ["name", "pollInterval", "discovery"]
+      "items": [
+        "name",
+        "pollInterval",
+        "discovery"
+      ]
     }
   ]
 }
