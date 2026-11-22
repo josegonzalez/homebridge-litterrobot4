@@ -39,7 +39,7 @@
               "type": "string",
               "required": true,
               "placeholder": "LR4C000000",
-              "description": "As shown by \"Check account\" above, or in the Whisker app."
+              "description": "As shown after \"Sign in and check\" above, or in the Whisker app."
             },
             "name": {
               "title": "Name",
@@ -122,8 +122,6 @@
     }
   },
   "layout": [
-    "email",
-    "password",
     {
       "key": "robots",
       "type": "array",

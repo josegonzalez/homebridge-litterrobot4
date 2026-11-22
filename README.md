@@ -59,7 +59,7 @@ npm install -g ./josediazgonzalez-homebridge-litterrobot4-*.tgz
 
 Open the plugin's settings in the Homebridge UI.
 
-- **Stock robots:** enter the email and password you use in the Whisker app and click "Check account". Every Litter-Robot 4 on the account is added to HomeKit with the name it has in the app. Use "Hide from HomeKit" to leave one out, or "Customize a Robot" to rename it or turn services off.
+- **Stock robots:** under "Whisker account", enter the email and password you use in the Whisker app and click "Sign in and check". The account is saved once Whisker accepts it. Every Litter-Robot 4 on the account is added to HomeKit with the name it has in the app. Use "Hide from HomeKit" to leave one out, or "Customize a Robot" to rename it or turn services off.
 - **ESPHome robots:** click "Search the network", then "Set up" on a robot and enter its web server username and password from the firmware config (`web_server: auth:`). The example config uses the username `user`. The plugin checks the credentials before saving.
 
 The Whisker password is stored in the Homebridge config. The plugin also caches its Whisker session in the Homebridge storage folder (`litterrobot4-tokens.json`, readable only by the Homebridge user), so a restart does not need a new sign in.
@@ -143,7 +143,7 @@ await robot.clean();
 
 ## Troubleshooting
 
-- **Sign in fails:** use the same email and password as the Whisker app. "Check account" in the settings shows the error from Whisker.
+- **Sign in fails:** use the same email and password as the Whisker app. "Sign in and check" in the settings shows the error from Whisker.
 - **Not responding:** the Whisker cloud is unreachable, or reports the robot as offline. Check that the robot shows as online in the Whisker app.
 - **ESPHome robot not found:** mDNS can be blocked by Docker bridge networking, VLANs or some mesh Wi-Fi systems. Run Homebridge with host networking, or set `host`.
 - **Debug logging:** start Homebridge with `-D` to see every failed poll.
