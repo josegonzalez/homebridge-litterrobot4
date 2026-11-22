@@ -12,14 +12,25 @@
 </style>
 
 <div id="lr-app">
-  <div class="d-flex justify-content-between align-items-center mb-2">
-    <h5 class="mb-0">Whisker account</h5>
-    <button type="button" class="btn btn-primary btn-sm" id="lr-account">Check account</button>
-  </div>
-  <p class="lr-meta" id="lr-account-status">
-    Robots with stock firmware are controlled through the Whisker cloud. Enter the email and password you use in the Whisker app
-    below, then check the account. Every robot on the account is added to HomeKit unless you hide it.
+  <div id="lr-error"></div>
+
+  <h5 class="mb-2">Whisker account</h5>
+  <p class="lr-meta">
+    Robots with stock firmware are controlled through the Whisker cloud. Sign in with the email and password you use in the
+    Whisker app. Every robot on the account is added to HomeKit unless you hide it.
   </p>
+  <form id="lr-signin" class="mb-2" autocomplete="off">
+    <div class="mb-2">
+      <label class="form-label mb-1" for="lr-email">Email</label>
+      <input class="form-control form-control-sm" id="lr-email" type="email" required />
+    </div>
+    <div class="mb-2">
+      <label class="form-label mb-1" for="lr-password">Password</label>
+      <input class="form-control form-control-sm" id="lr-password" type="password" required />
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm" id="lr-account">Sign in and check</button>
+  </form>
+  <p class="lr-meta" id="lr-account-status"></p>
   <div id="lr-cloud"></div>
 
   <div class="d-flex justify-content-between align-items-center mb-2 mt-4">
@@ -36,6 +47,9 @@
 
 <script>
   (async () => {
+    // Show the settings form first, so nothing below can keep it hidden.
+    homebridge.showSchemaForm();
+
     const PLATFORM = 'LitterRobot4';
     const $ = (id) => document.getElementById(id);
     const el = (tag, attrs = {}, ...children) => {
@@ -132,13 +146,24 @@
       homebridge.fixScrollHeight();
     }
 
-    $('lr-account').addEventListener('click', async () => {
+    // Signs in with the entered credentials and saves them only when Whisker accepts them.
+    $('lr-signin').addEventListener('submit', async (event) => {
+      event.preventDefault();
       const button = $('lr-account');
+      const email = $('lr-email').value.trim();
+      const password = $('lr-password').value;
       button.disabled = true;
       $('lr-account-status').textContent = 'Signing in...';
       try {
-        const [block] = await loadConfig();
-        accountRobots = await homebridge.request('/account', { email: block.email, password: block.password });
+        accountRobots = await homebridge.request('/account', { email, password });
+        const blocks = await loadConfig();
+        if (blocks[0].email !== email || blocks[0].password !== password) {
+          blocks[0].email = email;
+          blocks[0].password = password;
+          await homebridge.updatePluginConfig(blocks);
+          await homebridge.savePluginConfig();
+          homebridge.toast.success('Whisker account saved. Restart Homebridge (or the child bridge) to apply.', 'Litter-Robot 4');
+        }
         $('lr-account-status').textContent = accountRobots.length
           ? `Signed in. Found ${accountRobots.length} Litter-Robot 4 unit(s).`
           : 'Signed in, but there are no Litter-Robot 4 units on this account.';
@@ -283,9 +308,17 @@
       }
     });
 
-    await dropBlankEntries();
-    await renderCloud();
-    await renderESPHome();
-    homebridge.showSchemaForm();
+    try {
+      const [block] = await loadConfig();
+      $('lr-email').value = block.email || '';
+      $('lr-password').value = block.password || '';
+      $('lr-account-status').textContent = block.email ? `Saved account: ${block.email}. Sign in to list its robots.` : '';
+      await dropBlankEntries();
+      await renderCloud();
+      await renderESPHome();
+    } catch (err) {
+      $('lr-error').replaceChildren(el('div', { class: 'alert alert-danger' }, `The settings page could not load: ${errorText(err)}`));
+    }
+    homebridge.fixScrollHeight();
   })();
 </script>
